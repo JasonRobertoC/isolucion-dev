@@ -1,0 +1,365 @@
+﻿@{
+    ViewBag.Title = "Ventas";
+}
+
+<head>
+</head>
+<h2>@ViewBag.Title</h2>
+<h3>@ViewBag.Message</h3>
+
+<body>
+    <div style="margin-bottom:30px">
+        <button type="button" id="btnFacturar" class="btn btn-success">Nueva Factura</button>
+        <button type="button" class="btn btn-primary" onclick="ConsultarFacturas()">Consultar Facturas</button>
+        <button type="button" id="btnCerrar" class="btn btn-warning" onclick="Cerrar()" style="display:none">Cerrar Consulta</button>
+    </div>
+
+
+    <div>
+        <table id="tablaVentas" style="display:none">
+            <thead>
+                <tr>
+                    <td>Id</td>
+                    <td>Cliente</td>
+                    <td>Items</td>
+                    <td>Valor (Pesos)</td>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</body>
+
+
+
+<div id="DetalleItems" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title center" style="color:#ff7900"><span id="Titulo">Items</span></h4>
+            </div>
+
+            <div class="modal-body">
+
+                <table id="tablaItems">
+                    <thead>
+                        <tr>
+                            <td>Id Factura</td>
+                            <td>Item</td>
+                            <td>Cantidad</td>
+                            <td>Valor Unidad</td>
+                            <td>Total</td>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <div>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<div id="NuevaFact" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title center" style="color:#ff7900"><span id="Titulo">Nueva Factura</span></h4>
+            </div>
+
+            <div class="modal-body">
+                <form class="col-md-12 form-horizontal">
+                    <div class="form-group">
+                        <label>Seleccione Cliente</label>
+                        <select id="listClients">
+                        </select>
+                    </div>
+                    <div id="items">
+                    </div>
+                    <div style="float:right;margin-top:10px">
+                        <label>Total</label>
+                        <input disabled type="number" id="numValor" class="form-control"  />
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <div style="text-align: left;">
+                    <button type="button" id="btnAdd" class="btn btn-default">Agregar Item</button>
+                </div>
+                <div>
+                    <button type="button" id="btnSave" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@section Scripts{
+
+
+    <script>
+        var dataClients = null;
+        var dataItems = null;
+        var count = 0;
+
+        $(document).ready(function () {
+            dataSet();
+        });
+
+        function dataSet() {
+            dataSetClientes();
+            dataSetItems();
+        }
+
+
+        function dataSetItems() {
+            $.ajax({
+                //method: "GET",
+                async: false,
+                url: "/Home/GetItems",
+                data: {
+                    id: 0,
+                },
+                dataSrc: "",
+                success: function (data) {
+                    dataItems = data;
+                },
+                error: function (error) {
+                    alert("Error de carga");
+                }
+            });
+        }
+
+        function dataSetClientes() {
+            $.ajax({
+                //method: "GET",
+                async: false,
+                url: "/Home/GetClientes",
+                data: {
+                    id: 0,
+                },
+                dataSrc: "",
+                success: function (data) {
+                    dataClients = data;
+                },
+                error: function (error) {
+                    alert("Error de carga");
+                }
+            });
+        }
+
+        
+        function Cerrar() {
+            var tablaVentas = $('#tablaVentas').DataTable();
+            tablaVentas.destroy();
+            document.getElementById("tablaVentas").style.display = "none";
+            document.getElementById("btnCerrar").style.display = "none";
+        }
+
+        function ConsultarFacturas() {
+            document.getElementById("tablaVentas").style.display = "block";
+            var tablaVentas = $('#tablaVentas').DataTable();
+            tablaVentas.destroy();
+            GetVentas();
+            $('#btnCerrar').show();
+        }
+
+        function GetVentas() {
+            $("#tablaVentas").DataTable({
+                ajax: {
+                    //method: "GET",
+                    url: "/Home/GetVentas",
+
+                    dataSrc: "",
+                    error: function (error) {
+                        alert("Error de carga");
+                    }
+                },
+                columnDefs: [{
+                    "defaultContent": "",
+                    "targets": "_all",
+                    "className": "center",
+                }],
+                columns: [
+                    { data: "Id", className: "center", width: '10%' },
+                    { data: "Cliente", className: "center", width: '10%' },
+                    {
+                        data: "Ver Items",
+                        render: function (data, type, consulta) {
+                            return "<center><a id='" + consulta.Id + "'style='align:center;color: blue;' onclick='DetalleItems(this.id)'> Ver Items </a></center>";
+                        },
+                        width: '5%',
+                    },
+                    { data: "Valor", className: "center", width: '15%' },
+                ]
+
+            });
+        }
+
+        function DetalleItems(id) {
+            var tablaItems = $('#tablaItems').DataTable();
+            tablaItems.destroy();
+            GetItems(id);
+
+            $('#DetalleItems').modal('show');
+        }
+
+        function GetItems(id) {
+            $("#tablaItems").DataTable({
+                ajax: {
+                    //method: "GET",
+                    url: "/Home/GetItemsFact",
+                    data: {
+                        factura: id,
+                    },
+                    dataSrc: "",
+                    error: function (error) {
+                        alert("Error de carga");
+                    }
+                },
+                columnDefs: [{
+                    "defaultContent": "",
+                    "targets": "_all",
+                    "className": "center",
+                }],
+                columns: [
+                    { data: "Factura", className: "center", width: '10%' },
+                    { data: "Nombre", className: "center", width: '10%' },
+                    { data: "Cantidad", className: "center", width: '15%' },
+                    { data: "ValorUnidad", className: "center", width: '15%' },
+                    { data: "Total", className: "center", width: '15%' },
+                ]
+
+            });
+        }
+
+        $('#btnFacturar').click(function (e) {
+            count = 0;
+
+            $('#items').html("");
+            $('#listClients').html("");
+            var listClients = document.getElementById("listClients");
+            for (item in dataClients) {
+                var opt = document.createElement("option");
+                opt.textContent = dataClients[item].Nombre;
+                opt.value = dataClients[item].Id;
+                //listClients.options.add(opt);
+                listClients.appendChild(opt);
+            }
+
+            $('#NuevaFact').modal();
+        })
+
+
+        $('#btnAdd').click(function (e) {
+            count++;
+            var html = "";
+            html += '<div style="display: flex">';
+            html += '<div style="display: flex;flex-direction: column;">';
+
+            html += '<input type="hidden" id="hdIdItem' + count + '" value=1 />';
+
+            html += '<label>Seleccione Item</label>';
+            html += '<select id="item' + count + '" onchange="calcularValor(this.value,' + count + ')" value="">seleccione</select>';
+            html += '</div>';
+
+            html += '<div style="display: flex;flex-direction: column;margin-left: 20px;width:50px" class="">';
+            html += '<label>Cant</label>';
+            html += '<input type="number" id="cantidad' + count + '" value="0" onchange="calcularValor2(' + count + ')">';
+            html += '</div>';
+
+            html += '<div style="display: flex;flex-direction: column;margin-left: 20px;width:100px" class="">';
+            html += '<label>Valor unidad</label>';
+            html += '<input disabled type="number" id="valor2' + count + '" value="3000">';
+            html += '</div>';
+
+            html += '<div style="display: flex;flex-direction: column;margin-left: 20px;width:110px" class="">';
+            html += '<label>Subtotal</label>';
+            html += '<input disabled type="number" id="valor' + count + '" value="0">';
+            html += '</div>';
+            html += '</div>';
+           
+            $('#items').append(html);
+
+            for (item in dataItems) {
+                $('#item' + count).append('<option value=' + dataItems[item].Id + '>' + dataItems[item].Nombre + '</option>');
+            }
+        });
+
+
+        function calcularValor(idItem,pos) {
+            if (dataItems !== undefined) {
+                var data = dataItems.filter(
+                    function (e) {
+                        return e.Id == idItem;
+                    });
+                //$('#hdIdItem' + pos).val(idItem)
+                var cant = parseInt($('#cantidad' + pos).val());
+                var subtotal = cant * data[0].Valor;
+                $('#valor2' + pos).val(data[0].Valor);
+
+                $('#valor' + pos).val(subtotal);
+                Total();
+            }
+        }
+
+        function calcularValor2(pos) {
+            var cant = $('#cantidad' + pos).val();
+            var valor = $('#valor2' + pos).val();
+            $('#valor' + pos).val(valor * cant);
+            Total();
+        }
+
+        function Total() {
+            var total = 0;
+            for (var i=1; i <= count; i++) {
+                total += parseInt( $('#valor' + i).val());
+            }
+            $('#numValor').val(total);
+        }
+
+
+        $('#btnSave').click(function (e) {
+            var venta = new Object();
+            var items = [];
+            venta.Cliente = $('#listClients').val(); //id cliente
+            venta.Total = $('#numValor').val();
+            for (var i = 1; i <= count; i++) {
+                var item = new Object();
+                item.Item = $('#item' + i).val(); //id item
+                item.Cantidad = $('#cantidad' + i).val();
+                items.push(item);
+            }
+
+            $.ajax({
+                url: "/Home/SetFactura",
+                data: {
+                    venta: venta,
+                    items: items
+                },
+                success: function (data) {
+                    ConsultarFacturas();
+                    $('#NuevaFact').modal('hide');
+                    swal("Guardado", data, "success");
+                },
+                error: function (error) {
+                    alert("Error de carga");
+
+                }
+            });
+        });
+
+    </script>
+}

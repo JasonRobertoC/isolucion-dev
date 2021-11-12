@@ -1,0 +1,220 @@
+﻿@{
+    ViewBag.Title = "Gestión de Items";
+}
+
+
+<head>
+</head>
+
+<h2>@ViewBag.Title</h2>
+<h3>@ViewBag.Message</h3>
+
+<body>
+    <div style="margin-bottom:30px">
+        <button type="button" id="btnAddItem" class="btn btn-success">Agregar Item</button>
+        <button type="button" class="btn btn-primary" onclick="Consultar()">Consultar Items</button>
+        <button type="button" id="btnCerrar" class="btn btn-warning" onclick="Cerrar()" style="display:none">Cerrar Consulta</button>
+    </div>
+
+    <div>
+        <table id="tablaItems" style="display:none">
+            <thead>
+                <tr>
+                    <td>id</td>
+                    <td>Nombre</td>
+                    <td>Valor (Pesos)</td>
+                    <td>modificar</td>
+                    <td>eliminar</td>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</body>
+
+
+<div id="editarCrear" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title center" style="color:#ff7900"><span id="Titulo">Item</span></h4>
+            </div>
+
+            <div class="modal-body">
+                <form class="col-md-12 form-horizontal">
+                    <input type="hidden" id="hdIdItem" value="0" />
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" id="txtNom" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label>Valor (Pesos)</label>
+                        <input type="number" id="numValor" class="form-control" />
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <div>
+                    <button type="button" id="btnSave" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+
+
+    <script>
+        var dataItems = null;
+        var selectItem;
+        //var json;
+        //json = JSON.stringify(data)
+
+        $(document).ready(function () {
+            document.getElementById("tablaItems").style.display = "none";
+        });
+
+        function Consultar() {
+            dataSet();
+            document.getElementById("tablaItems").style.display = "block";
+            var tablaItems = $('#tablaItems').DataTable();
+            tablaItems.destroy();
+            GetItems();
+            $('#btnCerrar').show();
+        }
+
+        function Cerrar() {
+            var tablaVentas = $('#tablaItems').DataTable();
+            tablaVentas.destroy();
+            document.getElementById("tablaItems").style.display = "none";
+            document.getElementById("btnCerrar").style.display = "none";
+        }
+
+        function dataSet() {
+            $.ajax({
+                //method: "GET",
+                async: false,
+                url: "/Home/GetItems",
+                data: {
+                    id: 0,
+                },
+                dataSrc: "",
+                success: function (data) {
+                    dataItems = data;
+                },
+                error: function (error) {
+                    alert("Error de carga");
+                }
+            });
+        }
+
+        function GetItems() {
+            $("#tablaItems").DataTable({
+                //searching: false,
+                //paging: false,
+
+                data: dataItems,
+                columnDefs: [{
+                    "defaultContent": "",
+                    "targets": "_all",
+                    "className": "center",
+                }],
+                columns: [
+                    { data: "Id", className: "center", width: '10%' },
+                    { data: "Nombre", className: "center", width: '10%' },
+                    { data: "Valor", className: "center", width: '10%' },
+                    {
+                        data: "Modificar",
+                        render: function (data, type, consulta) {
+                            return "<center><a id='" + consulta.Id + "' class='btn' style='align:center;color: #fff;background:#18b73a;' onclick='Editar(this.id)'> Editar </a></center>";
+                        },
+                        width: '5%',
+                    },
+                    {
+                        data: "Eliminar",
+                        render: function (data, type, consulta) {
+                            return "<center><a id='" + consulta.Id + "' class='btn' style='align:center;color: #fff;background:#d91919;' onclick='Eliminar(this.id)'> Eliminar </a></center>";
+                        },
+                        width: '5%',
+                    },
+                ]
+
+            });
+        }
+
+        //////////////////////////////////////////////////////////////////
+
+        function Editar(id) {
+            if (dataItems !== undefined) {
+                var data = dataItems.filter(
+                    function (e) {
+                        return e.Id == id;
+                    });
+                selectItem = data[0];
+            }
+            EditarCear();
+        }
+
+        function EditarCear() {
+            if (selectItem != null) {
+                $('#hdIdItem').val(selectItem.Id);
+                $('#txtNom').val(selectItem.Nombre);
+                $('#numValor').val(selectItem.Valor);
+            }
+            $('#editarCrear').modal();
+        }
+
+
+        $('#btnAddItem').click(function (e) {
+            selectItem = {
+                Id: 0,
+                Nombre: '',
+                Valor: 0
+            };
+            EditarCear();
+        });
+
+        $('#btnSave').click(function (e) {
+            var item = new Object();
+            item.Id = $('#hdIdItem').val();
+            item.Nombre = $('#txtNom').val().trim();
+            item.Valor = $('#numValor').val();
+
+
+            $.ajax({
+                url: "/Home/SetItem",
+                data: { item: item },
+                success: function (data) {
+                    Consultar();
+                    $('#editarCrear').modal('hide');
+                    swal("Guardado", data, "success");
+                },
+                error: function (error) {
+                    alert("Error de carga");
+
+                }
+            });
+        });
+
+        function Eliminar(id) {
+            $.ajax({
+                url: "/Home/DeleteItem",
+                data: { id: id },
+                success: function (data) {
+                    Consultar();
+                    swal("Elminado", data, "success");
+                },
+                error: function (error) {
+                    alert("Error de carga");
+
+                }
+            });
+        }
+
+    </script>
+}

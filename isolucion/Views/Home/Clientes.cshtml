@@ -1,0 +1,381 @@
+﻿@{
+    ViewBag.Title = "Gestión de Clientes";
+}
+
+<head>
+</head>
+<h2>@ViewBag.Title</h2>
+<h3>@ViewBag.Message</h3>
+
+
+<body>
+    <div style="margin-bottom:30px">
+        <button type="button" id="btnAddCliente" class="btn btn-success">Agregar Cliente</button>
+        <button type="button" class="btn btn-primary" onclick="Consultar()">Consultar Clientes</button>
+        <button type="button" id="btnCerrar" class="btn btn-warning" onclick="Cerrar()" style="display:none">Cerrar Consulta</button>
+    </div>
+
+    <div>
+        <table id="tablaClientes" style="display:none">
+            <thead>
+                <tr>
+                    <td>id</td>
+                    <td>Nombre</td>
+                    <td>Identificacion</td>
+                    <td>email</td>
+                    <td>Total Facturación</td>
+                    <td>Facturas</td>
+                    <td>modificar</td>
+                    <td>eliminar</td>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</body>
+
+
+
+<div id="editarCrear" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title center" style="color:#ff7900"><span id="Titulo">Cliente</span></h4>
+            </div>
+
+            <div class="modal-body">
+                <form class="col-md-12 form-horizontal">
+                    <input type="hidden" id="hdIdClient" value="0" />
+                    <div class="form-group">
+                        <label>Identificacion</label>
+                        <input type="text" id="txtIdent" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" id="txtNom" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label>email</label>
+                        <input type="text" id="txtEmail" class="form-control" />
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <div>
+                    <button type="button" id="btnSave" class="btn btn-success" onclick="Guardar()">Guardar</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<div id="DetalleFact" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title center" style="color:#ff7900"><span id="Titulo">Facturas</span></h4>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <table id="tablaVentas">
+                        <thead>
+                            <tr>
+                                <td>Id</td>
+                                <td>Cliente</td>
+                                <td>Items</td>
+                                <td>Valor (Pesos)</td>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<div id="DetalleItems" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title center" style="color:#ff7900"><span id="Titulo">Items</span></h4>
+            </div>
+
+            <div class="modal-body">
+
+                <table id="tablaItems">
+                    <thead>
+                        <tr>
+                            <td>Id Factura</td>
+                            <td>Item</td>
+                            <td>Cantidad</td>
+                            <td>Valor Unidad</td>
+                            <td>Total</td>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <div>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts{
+
+
+    <script>
+        var dataClients = null;
+        var selectClient;
+
+        $(document).ready(function () {
+            document.getElementById("tablaClientes").style.display = "none";
+        });
+
+        function Consultar() {
+            document.getElementById("tablaClientes").style.display = "block";
+            var tablaClientes = $('#tablaClientes').DataTable();
+            tablaClientes.destroy();
+            GetClientes();
+            $('#btnCerrar').show();
+        }
+
+        function Cerrar() {
+            var tablaVentas = $('#tablaClientes').DataTable();
+            tablaVentas.destroy();
+            document.getElementById("tablaClientes").style.display = "none";
+            document.getElementById("btnCerrar").style.display = "none";
+        }
+
+        function GetClientes() {
+            $("#tablaClientes").DataTable({
+                //searching: false,
+                //paging: false,
+
+                ajax: {
+                    //method: "GET",
+                    url: "/Home/GetClientes",
+                    data: {
+                        id: 0,
+                    },
+                    dataSrc: function (data) {
+                        dataClients = data;
+                        return data;
+                    },
+                    error: function (error) {
+                        alert("Error de carga");
+                    }
+                },
+                columnDefs: [{
+                    "defaultContent": "",
+                    "targets": "_all",
+                    "className": "center",
+                }],
+                columns: [
+                    { data: "Id", className: "center", width: '10%' },
+                    { data: "Nombre", className: "center", width: '10%' },
+                    { data: "Identificacion", className: "center", width: '10%' },
+                    { data: "email", className: "center", width: '15%' },
+                    { data: "Facturacion", className: "center", width: '15%' },
+                    {
+                        data: "Facturas",
+                        render: function (data, type, consulta) {
+                            return "<center><a id='" + consulta.Id + "'style='align:center;color: blue;' onclick='Facturas(this.id)'> Ver Facturas </a></center>";
+                        },
+                        width: '5%',
+                    },
+                    {
+                        data: "Modificar",
+                        render: function (data, type, consulta, otro, nu, cu, yu) {
+                            //dataClients.push(consulta);
+                            return "<center><a id='" + consulta.Id + "' class='btn' style='align:center;color: #fff;background:#18b73a;' onclick='Editar(this.id)'> Editar </a></center>";
+                        },
+                        width: '5%',
+                    },
+                    {
+                        data: "Eliminar",
+                        render: function (data, type, consulta) {
+                            return "<center><a id='" + consulta.Id + "' class='btn' style='align:center;color: #fff;background:#d91919;' onclick='Eliminar(this.id)'> Eliminar </a></center>";
+                        },
+                        width: '5%',
+                    },
+                ]
+
+            });
+        }
+
+        //////////////////////////////////////////////////////////////////
+
+        function EditarCear() {
+            if (selectClient != null) {
+                $('#hdIdClient').val(selectClient.Id);
+                $('#txtIdent').val(selectClient.Identificacion);
+                $('#txtNom').val(selectClient.Nombre);
+                $('#txtEmail').val(selectClient.email);
+            }
+            $('#editarCrear').modal();
+        }
+
+
+        function Editar(id) {
+            if (dataClients !== undefined) {
+                var data = dataClients.filter(
+                    function (e) {
+                        return e.Id == id;
+                    });
+                selectClient = data[0];
+            }
+            EditarCear();
+        }
+
+        $('#btnAddCliente').click(function (e) {
+            selectClient = {
+                Id: 0,
+                Identificacion: '',
+                Nombre: '',
+                email: ''
+            };
+            EditarCear();
+        });
+
+        $('#btnSave').click(function (e) {
+            var cliente = new Object();
+            cliente.Id = $('#hdIdClient').val();
+            cliente.Identificacion = $('#txtIdent').val().trim();
+            cliente.Nombre = $('#txtNom').val();
+            cliente.email = $('#txtEmail').val();
+
+
+            $.ajax({
+                url: "/Home/SetClient",
+                data: { cliente: cliente },
+                success: function (data) {
+                    Consultar();
+                    $('#editarCrear').modal('hide');
+                    swal("Guardado", data, "success");
+                },
+                error: function (error) {
+                    alert("Error de carga");
+
+                }
+            });
+        });
+
+        function Eliminar(id) {
+            $.ajax({
+                url: "/Home/DeleteClient",
+                data: { id: id },
+                success: function (data) {
+                    Consultar();
+                    swal("Elminado", data, "success");
+                },
+                error: function (error) {
+                    alert("Error de carga");
+
+                }
+            });
+        }
+
+        function Facturas(id) {
+            var tablaVentas = $('#tablaVentas').DataTable();
+            tablaVentas.destroy();
+            GetVentas(id);
+            $('#DetalleFact').modal();
+        }
+
+        function GetVentas(id) {
+            $("#tablaVentas").DataTable({
+                ajax: {
+                    //method: "GET",
+                    url: "/Home/GetVentasCli",
+                    data: {
+                        id: id
+                    },
+                    dataSrc: "",
+                    error: function (error) {
+                        alert("Error de carga");
+                    }
+                },
+                columnDefs: [{
+                    "defaultContent": "",
+                    "targets": "_all",
+                    "className": "center",
+                }],
+                columns: [
+                    { data: "Id", className: "center", width: '10%' },
+                    { data: "Cliente", className: "center", width: '10%' },
+                    {
+                        data: "Ver Items",
+                        render: function (data, type, consulta) {
+                            return "<center><a id='" + consulta.Id + "'style='align:center;color: blue;' onclick='DetalleItems(this.id)'> Ver Items </a></center>";
+                        },
+                        width: '5%',
+                    },
+                    { data: "Valor", className: "center", width: '15%' },
+                ]
+
+            });
+        }
+
+        function DetalleItems(id) {
+            var tablaItems = $('#tablaItems').DataTable();
+            tablaItems.destroy();
+            GetItems(id);
+
+            $('#DetalleItems').modal('show');
+        }
+
+        function GetItems(id) {
+            $("#tablaItems").DataTable({
+                ajax: {
+                    //method: "GET",
+                    url: "/Home/GetItemsFact",
+                    data: {
+                        factura: id,
+                    },
+                    dataSrc: "",
+                    error: function (error) {
+                        alert("Error de carga");
+                    }
+                },
+                columnDefs: [{
+                    "defaultContent": "",
+                    "targets": "_all",
+                    "className": "center",
+                }],
+                columns: [
+                    { data: "Factura", className: "center", width: '10%' },
+                    { data: "Nombre", className: "center", width: '10%' },
+                    { data: "Cantidad", className: "center", width: '15%' },
+                    { data: "ValorUnidad", className: "center", width: '15%' },
+                    { data: "Total", className: "center", width: '15%' },
+                ]
+
+            });
+        }
+
+    </script>
+}
+
